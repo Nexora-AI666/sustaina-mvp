@@ -181,8 +181,6 @@ st.info("Important: all values are **modeled estimates** based on declared input
 # ----------------------------
 def make_certificate_pdf(record: dict, public_url: str = "") -> bytes:
     pdf = FPDF()
-    pdf_bytes = bytes(pdf.output(dest="S"))
-
     pdf.set_auto_page_break(auto=True, margin=12)
     pdf.add_page()
 
@@ -190,13 +188,18 @@ def make_certificate_pdf(record: dict, public_url: str = "") -> bytes:
     pdf.cell(0, 10, "Sustaina — Risk & Compliance Certificate (MVP)", ln=True)
 
     pdf.set_font("Helvetica", "", 11)
-    pdf.multi_cell(0, 6, "This certificate summarizes modeled emissions and risk exposure signals for decision-use by banks, insurers, ports, and counterparties. "
-                         "It is not a legal compliance guarantee. Estimates are derived from declared inputs and publicly known factors.")
+    pdf.multi_cell(
+        0,
+        6,
+        "This certificate summarizes modeled emissions and risk exposure signals for decision-use by banks, insurers, ports, and counterparties. "
+        "It is not a legal compliance guarantee. Estimates are derived from declared inputs and publicly known factors."
+    )
 
     pdf.ln(2)
     pdf.set_font("Helvetica", "B", 12)
     pdf.cell(0, 8, "Asset Identity", ln=True)
     pdf.set_font("Helvetica", "", 11)
+
     for k in ["Organization", "Vessel name", "IMO", "Ship type", "Year built", "DWT", "Engine type", "Fuel type", "EU exposure", "Retrofit status"]:
         pdf.cell(55, 6, f"{k}:", 0, 0)
         pdf.multi_cell(0, 6, str(record.get(k, "")))
@@ -205,6 +208,7 @@ def make_certificate_pdf(record: dict, public_url: str = "") -> bytes:
     pdf.set_font("Helvetica", "B", 12)
     pdf.cell(0, 8, "Modeled Results", ln=True)
     pdf.set_font("Helvetica", "", 11)
+
     rows = [
         ("Risk score (0–100)", f"{record['Risk score']:.1f} ({record['Posture']})"),
         ("Modeled annual fuel (t)", f"{record['Annual fuel (t)']:,.0f}"),
@@ -220,13 +224,17 @@ def make_certificate_pdf(record: dict, public_url: str = "") -> bytes:
     pdf.set_font("Helvetica", "B", 12)
     pdf.cell(0, 8, "Declared Assumptions (MVP)", ln=True)
     pdf.set_font("Helvetica", "", 11)
-    pdf.multi_cell(0, 6,
-                   f"- Operating days/year: {record['Operating days']}\n"
-                   f"- Primary route region: {record['Route region']}\n"
-                   f"- Speed profile: {record['Speed profile']}\n"
-                   f"- This MVP uses a simplified fuel-use model. Future versions integrate telemetry/voyage evidence.\n"
-                   f"- CH₄ and N₂O are flagged as risk dimensions; quantified accounting requires metered pathways or verified MRV integrations.")
+    pdf.multi_cell(
+        0,
+        6,
+        f"- Operating days/year: {record['Operating days']}\n"
+        f"- Primary route region: {record['Route region']}\n"
+        f"- Speed profile: {record['Speed profile']}\n"
+        f"- This MVP uses a simplified fuel-use model. Future versions integrate telemetry/voyage evidence.\n"
+        f"- CH₄ and N₂O are flagged as risk dimensions; quantified accounting requires metered pathways or verified MRV integrations."
+    )
 
+    # Optional: QR (only if you later provide a real URL)
     if public_url:
         pdf.ln(2)
         pdf.set_font("Helvetica", "B", 12)
@@ -239,56 +247,21 @@ def make_certificate_pdf(record: dict, public_url: str = "") -> bytes:
         qr.save(buf, format="PNG")
         qr_bytes = buf.getvalue()
 
-        # save QR temporarily into memory for fpdf2
         qr_path = "qr_tmp.png"
         with open(qr_path, "wb") as f:
             f.write(qr_bytes)
+
         pdf.image(qr_path, x=160, y=250, w=35)
 
     pdf.ln(2)
     pdf.set_font("Helvetica", "I", 9)
-    pdf.multi_cell(0, 5, "Disclaimer: This certificate is decision-support. It does not replace statutory reporting requirements. "
-                         "Use alongside accredited verification where required.")
+    pdf.multi_cell(
+        0,
+        5,
+        "Disclaimer: This certificate is decision-support. It does not replace statutory reporting requirements. "
+        "Use alongside accredited verification where required."
+    )
 
+    # ✅ Only output at the END (this returns the PDF bytes)
     return pdf.output(dest="S").encode("latin-1", errors="ignore")
 
-st.subheader("4) Download Certificate (generated from the live system state)")
-
-valid_from = date.today()
-valid_until = valid_from + timedelta(days=int(cert_valid_days))
-
-record = {
-    "Organization": org,
-    "Vessel name": vessel_name,
-    "IMO": imo,
-    "Ship type": ship_type,
-    "Year built": int(year_built),
-    "DWT": int(dwt),
-    "Engine type": engine_type,
-    "Fuel type": fuel_type,
-    "EU exposure": eu_exposure,
-    "Retrofit status": retrofit_status,
-    "Operating days": int(operating_days),
-    "Route region": route_region,
-    "Speed profile": speed_profile,
-    "Risk score": risk_score,
-    "Posture": posture,
-    "Annual fuel (t)": annual_fuel_tonnes,
-    "Annual CO2 (t)": annual_co2_tonnes,
-    "Carbon cost (€)": annual_cost_est_eur,
-    "Valid from": str(valid_from),
-    "Valid until": str(valid_until),
-}
-
-pdf_bytes = make_certificate_pdf(record, public_url="")
-
-st.download_button(
-    label="Download Certificate (PDF)",
-    data=pdf_bytes,
-    file_name="Sustaina_Certificate.pdf",
-    mime="application/pdf",
-    key="download_cert"
-)
-
-
-st.caption("Next iterations: accounts, fleets, evidence uploads, GPS/voyage integration, insurer/bank views, and verified MRV connectors.")
