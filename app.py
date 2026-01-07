@@ -181,6 +181,8 @@ st.info("Important: all values are **modeled estimates** based on declared input
 # ----------------------------
 def make_certificate_pdf(record: dict, public_url: str = "") -> bytes:
     pdf = FPDF()
+    pdf_bytes = bytes(pdf.output(dest="S"))
+
     pdf.set_auto_page_break(auto=True, margin=12)
     pdf.add_page()
 
@@ -281,10 +283,12 @@ record = {
 pdf_bytes = make_certificate_pdf(record, public_url="")
 
 st.download_button(
-    label="⬇️ Download Sustaina Certificate (PDF)",
+    label="Download Certificate (PDF)",
     data=pdf_bytes,
-    file_name=f"Sustaina_Certificate_{imo}.pdf",
-    mime="application/pdf"
+    file_name="Sustaina_Certificate.pdf",
+    mime="application/pdf",
+    key="download_cert"
 )
+
 
 st.caption("Next iterations: accounts, fleets, evidence uploads, GPS/voyage integration, insurer/bank views, and verified MRV connectors.")
