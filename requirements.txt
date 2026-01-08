@@ -1,3 +1,5 @@
-streamlit
-pandas
-fpdf2
+streamlit==1.41.1
+pandas==2.2.3
+reportlab==4.2.5
+qrcode==7.4.2
+Pillow==11.0.0
